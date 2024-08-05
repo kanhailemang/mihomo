@@ -1,0 +1,61 @@
+PS：适用于 Debian & Ubuntu 系统；
+PS：需要在 PVE 里面开启 TUN 模式
+PS：推荐SSH工具 【MobaXterm】、【FinalShell】；
+PS：查看换源 【LXC】；
+PS：如果使用第三方工具需要先开启允许登录。【开启 ROOT】。
+一、开启 TUN
+PS：这一步需要在在 PVE 里面 Shell 操作
+使用下面命令（把下面的 LXCID 修改成你实际的ID号），开启 TUN 模式
+echo -e "lxc.cgroup2.devices.allow: c 10:200 rwm\nlxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file" >>/etc/pve/lxc/LXCID.conf
+二、使用下面命令，更新
+apt update && apt dist-upgrade -y
+三、使用下面命令，安装必要插件
+apt install -y curl git wget nano
+四、开启 V4 & V6 路由转发
+echo -e "net.ipv4.ip_forward = 1\nnet.ipv6.conf.all.forwarding = 1" >>/etc/sysctl.conf && reboot
+5、使用下面命令，移动/usr/local/bin/mihomo，（需要修改成你下载的版本号！！！）
+mv mihomo-linux-amd64-compatible-alpha-974332c /usr/local/bin/mihomo
+6、使用下面命令，安装 UI 界面
+git clone https://github.com/metacubex/metacubexd.git -b gh-pages /etc/mihomo/ui
+7、使用下面命令，创建 systemd 文件
+nano /etc/systemd/system/mihomo.service
+8、拷贝下面内全部类容，粘贴进去，按Ctrl+x，按y保存
+先在 官网 看看有没有更新
+[Unit]
+Description=mihomo Daemon, Another Clash Kernel.
+After=network.target NetworkManager.service systemd-networkd.service iwd.service
+
+[Service]
+Type=simple
+LimitNPROC=500
+LimitNOFILE=1000000
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_SYS_PTRACE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
+Restart=always
+ExecStartPre=/usr/bin/sleep 1s
+ExecStart=/usr/local/bin/mihomo -d /etc/mihomo
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target
+9、添加配置文件
+TUN 模式配置文件
+nano /etc/mihomo/config.yaml
+六、启动 mihomo
+重新加载 systemd
+systemctl daemon-reload
+
+设置开机启动 mihomo
+systemctl enable mihomo
+
+立即启动 mihomo
+systemctl start mihomo
+
+检查 mihomo 运行状况
+systemctl status mihomo
+
+检查 mihomo 运行日志
+journalctl -u mihomo -o cat -e
+
+重新启动 mihomo
+systemctl reload mihomo
